@@ -7,36 +7,69 @@ import cv2
 
 # Khởi tạo Flask Server Backend
 app = Flask(__name__)
+CORS(app)
 
 # Apply Flask CORS
-CORS(app)
 app.config['CORS_HEADERS'] = 'Content-Type'
 app.config['UPLOAD_FOLDER'] = "static"
+app.config['PREVIEW'] = "preview"
+yolov6_model = my_yolov6.my_yolov6(
+    "weights/best-train.pt", "cpu", "data/coco.yaml", 640, False)
 
-yolov6_model = my_yolov6.my_yolov6("weights/best-train.pt", "cpu", "data/coco.yaml", 640, False)
 
-@app.route('/', methods=['POST'] )
+@app.route('/predict', methods=['POST'])
 def predict_yolov6():
-    image = request.files['file']
+    image = request.files.getlist("file")
+    path_pred = []
     if image:
-        # Lưu file
-        path_to_save = os.path.join(app.config['UPLOAD_FOLDER'], image.filename)
-        print("Save = ", path_to_save)
-        image.save(path_to_save)
+        for f in image:
 
-        frame = cv2.imread(path_to_save)
+            path_to_save = os.path.join(
+                app.config['UPLOAD_FOLDER'], f.filename)
+            f.save(path_to_save)
+            # print("Save = ", path_to_save)
 
-        # Nhận diên qua model Yolov6
-        frame, no_object = yolov6_model.infer(frame)
+            frame = cv2.imread(path_to_save)
+            # # Nhận diên qua model Yolov6
+            frame, no_object = yolov6_model.infer(frame)
 
-        if no_object >0:
-            cv2.imwrite(path_to_save, frame)
+            pre = {
+                "img": path_to_save,
+                "number": no_object
+            }
 
-        del frame
-        # Trả về đường dẫn tới file ảnh đã bounding box
-        return path_to_save # http://server.com/static/path_to_save
+            if no_object > 0:
+                cv2.imwrite(path_to_save, frame)
+            del frame
+            # Trả về đường dẫn tới file ảnh đã bounding box
+            path_pred.append(pre)
+
+        return {"data": path_pred}  # http://server.com/static/path_to_save
 
     return 'Upload file to detect'
+
+
+@app.route('/preview', methods=['POST'])
+def preview():
+    image = request.files.getlist("file")
+    path_pred = []
+    if image:
+        for f in image:
+            path_to_save = os.path.join(app.config['PREVIEW'], f.filename)
+            f.save(path_to_save)
+            frame = cv2.imread(path_to_save)
+            pre = {
+                "img": path_to_save,
+                # "number": no_object
+            }
+            cv2.imwrite(path_to_save, frame)
+            del frame
+            path_pred.append(pre)
+
+        return {"data": path_pred}  # http://server.com/static/path_to_save
+
+    return 'Upload file to detect'
+
 
 # Start Backend
 if __name__ == '__main__':
