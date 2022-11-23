@@ -55,15 +55,25 @@ def preview():
     path_pred = []
     if image:
         for f in image:
-            path_to_save = os.path.join(app.config['PREVIEW'], f.filename)
+
+            path_to_save = os.path.join(
+                app.config['PREVIEW'], f.filename)
             f.save(path_to_save)
-            frame = cv2.imread(path_to_save)
+            # print("Save = ", path_to_save)
+
+            # frame = cv2.imread(path_to_save)
+            # # Nhận diên qua model Yolov6
+            # frame, no_object = yolov6_model.infer(frame)
+
             pre = {
                 "img": path_to_save,
                 # "number": no_object
             }
-            cv2.imwrite(path_to_save, frame)
-            del frame
+
+            # if no_object > 0:
+            # cv2.imwrite(path_to_save, frame)
+            # del frame
+            # Trả về đường dẫn tới file ảnh đã bounding box
             path_pred.append(pre)
 
         return {"data": path_pred}  # http://server.com/static/path_to_save
