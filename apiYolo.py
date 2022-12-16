@@ -13,6 +13,7 @@ CORS(app)
 app.config['CORS_HEADERS'] = 'Content-Type'
 app.config['UPLOAD_FOLDER'] = "static"
 app.config['PREVIEW'] = "preview"
+app.config['FOlDER_IMG'] = "predictFolder"
 yolov6_model = my_yolov6.my_yolov6(
     "weights/best-train.pt", "cpu", "data/coco.yaml", 640, False)
 
@@ -33,8 +34,10 @@ def predict_yolov6():
             # # Nhận diên qua model Yolov6
             frame, no_object = yolov6_model.infer(frame)
 
+            # return yolov6_model.infer(frame)
+
             pre = {
-                "img": path_to_save,
+                "originImg": path_to_save,
                 "number": no_object
             }
 
@@ -48,8 +51,32 @@ def predict_yolov6():
 
     return 'Upload file to detect'
 
+@app.route('/predict/folder', methods=['POST'])
+def predictFolder_yolov6():
+    image = request.files.getlist("file")
+    abnormal=0
+    normal=0
+    if image:
+        for f in image:
 
-@app.route('/preview', methods=['POST'])
+            path_to_save = os.path.join(
+                app.config['FOlDER_IMG'], f.filename)
+            f.save(path_to_save)
+
+            frame = cv2.imread(path_to_save)
+            frame, no_object = yolov6_model.infer(frame)
+
+            if no_object > 0:
+                abnormal=abnormal+1
+            else:
+                normal=normal+1    
+            del frame
+
+        return {"abnormal":abnormal,"normal":normal}  # http://server.com/static/path_to_save
+
+    return 'Upload file to detect'
+
+@app.route('/preview', methods=['GET', 'POST'])
 def preview():
     image = request.files.getlist("file")
     path_pred = []
@@ -61,18 +88,18 @@ def preview():
             f.save(path_to_save)
             # print("Save = ", path_to_save)
 
-            # frame = cv2.imread(path_to_save)
+            frame = cv2.imread(path_to_save)
             # # Nhận diên qua model Yolov6
             # frame, no_object = yolov6_model.infer(frame)
 
             pre = {
-                "img": path_to_save,
+                "originImg": path_to_save,
                 # "number": no_object
             }
 
             # if no_object > 0:
             # cv2.imwrite(path_to_save, frame)
-            # del frame
+            del frame
             # Trả về đường dẫn tới file ảnh đã bounding box
             path_pred.append(pre)
 
