@@ -12,10 +12,10 @@ CORS(app)
 # Apply Flask CORS
 app.config['CORS_HEADERS'] = 'Content-Type'
 app.config['UPLOAD_FOLDER'] = "static"
-app.config['PREVIEW'] = "preview"
+app.config['PREVIEW'] = "static/preview"
 app.config['FOlDER_IMG'] = "predictFolder"
 yolov6_model = my_yolov6.my_yolov6(
-    "weights/best-train.pt", "cpu", "data/coco.yaml", 640, False)
+    "weights/best-train.pt", "cpu", "data/mydataset.yaml", 640, False)
 
 
 @app.route('/predict', methods=['POST'])
@@ -76,7 +76,7 @@ def predictFolder_yolov6():
 
     return 'Upload file to detect'
 
-@app.route('/preview', methods=['GET', 'POST'])
+@app.route('/preview', methods=['POST'])
 def preview():
     image = request.files.getlist("file")
     path_pred = []
